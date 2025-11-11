@@ -18,5 +18,5 @@ panic = "abort"
 
 [dependencies]
 bevy = "0.17.2"
-bevy_ecs_tilemap = "0.17.0"
+bevy_ecs_tilemap = { version = "0.17.0", features = ["atlas"] }
 ndshape = "0.3.0"

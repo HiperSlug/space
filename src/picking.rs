@@ -10,6 +10,20 @@ use bevy_ecs_tilemap::anchor::TilemapAnchor;
 use bevy_ecs_tilemap::map::{TilemapGridSize, TilemapSize, TilemapTileSize, TilemapType};
 use bevy_ecs_tilemap::tiles::{TilePos, TileStorage};
 
+#[derive(Component, Default)]
+pub struct PickableTilemap {
+    pub occupied_only: bool,
+    pub priority: i32,
+}
+
+impl PickableTilemap {
+    pub fn new(occupied_only: bool, priority: i32) -> Self {
+        Self {
+            occupied_only,
+            priority,
+        }
+    }
+}
 pub struct TilemapPickingPlugin;
 
 impl Plugin for TilemapPickingPlugin {
@@ -30,6 +44,7 @@ pub fn update_hits(
         &TileStorage,
         &GlobalTransform,
         &TilemapAnchor,
+        &PickableTilemap,
     )>,
     mut pointer_hits_writer: MessageWriter<PointerHits>,
 ) {
@@ -39,16 +54,34 @@ pub fn update_hits(
         };
         let mut hits = Vec::new();
 
-        for (entity, map_size, grid_size, tile_size, map_type, storage, transform, anchor) in
-            maps.iter()
+        for (
+            entity,
+            map_size,
+            grid_size,
+            tile_size,
+            map_type,
+            storage,
+            transform,
+            anchor,
+            settings,
+        ) in maps.iter()
         {
-            let world_pos = (transform.to_matrix().inverse() * ray.origin.extend(1.)).xy();
+            let tilemap_plane_z = transform.translation().z;
+            let t = (tilemap_plane_z - ray.origin.z) / ray.direction.z;
+            let world_pos = ray.origin + ray.direction.as_vec3() * t;
+
+            let model_pos = (transform.to_matrix().inverse() * ray.origin.extend(1.)).xy();
 
             if let Some(tile_pos) = TilePos::from_world_pos(
-                &world_pos, map_size, grid_size, tile_size, map_type, anchor,
+                &model_pos, map_size, grid_size, tile_size, map_type, anchor,
             ) {
-                if storage.checked_get(&tile_pos).is_some() {
-                    let hit = HitData::new(ray_id.camera, transform.translation().z, Some(world_pos.extend(0.)), None);
+                if !settings.occupied_only || storage.get(&tile_pos).is_some() {
+                    let hit = HitData::new(
+                        ray_id.camera,
+                        -(settings.priority as f32),
+                        Some(world_pos),
+                        None,
+                    );
                     hits.push((entity, hit));
                 }
             }
