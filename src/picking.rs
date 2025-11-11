@@ -1,3 +1,7 @@
+//! Based on
+//! [MeshPickingPlugin](https://github.com/bevyengine/bevy/blob/main/crates/bevy_picking/src/mesh_picking/mod.rs#L67)
+//! & [mouse_to_tile.rs](https://github.com/StarArawn/bevy_ecs_tilemap/blob/main/examples/mouse_to_tile.rs)
+
 use bevy::picking::PickingSystems;
 use bevy::picking::backend::ray::RayMap;
 use bevy::picking::backend::{HitData, PointerHits};
@@ -43,9 +47,8 @@ pub fn update_hits(
             if let Some(tile_pos) = TilePos::from_world_pos(
                 &world_pos, map_size, grid_size, tile_size, map_type, anchor,
             ) {
-                if storage.get(&tile_pos).is_some() {
-                    let pos: Vec2 = tile_pos.into();
-                    let hit = HitData::new(ray_id.camera, 0., Some(pos.extend(0.)), None);
+                if storage.checked_get(&tile_pos).is_some() {
+                    let hit = HitData::new(ray_id.camera, transform.translation().z, Some(world_pos.extend(0.)), None);
                     hits.push((entity, hit));
                 }
             }
