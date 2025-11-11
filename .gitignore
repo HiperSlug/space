@@ -24,3 +24,9 @@ target
 # Added by cargo
 
 /target
+
+
+# Added by me
+
+# used assets will be embedded
+assets/
